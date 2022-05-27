@@ -1,0 +1,48 @@
+version: '3.9'
+services:
+  app:
+    container_name: django-app-app
+    build: ./app
+    env_file:
+      - ./db/db.env
+    volumes:
+      - ./app:/app
+    # command: bash -c "python manage.py runserver"
+    command: bash -c "python manage.py runserver 0.0.0.0:8000"
+    # tty: true
+    ports:
+      - 8080:8000  # 通常実行
+      - 8081:8081  # デバッグ用
+    depends_on:
+      - db
+
+  db:
+    container_name: django-app-db
+    build: ./db
+    env_file:
+      - ./db/db.env  # MySQL設定ファイル
+    volumes:
+      - ./db/initdb:/docker-entrypoint-initdb.d  # DB初期状態構築用SQL
+      - ./db/log:/var/log/mysql
+      - mysql:/var/lib/mysql  # データファイル
+    ports:
+      - 3306:3306
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: django-app-phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db  # サービス名（db）でもコンテナ名（django-app-db）でもどちらでも繋がるみたい
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    ports:
+      - 8000:80
+    # 必要な理由がよくわからないので一旦コメントアウト
+    # volumes:
+    #   - ./phpmyadmin/sessions:/sessions
+    depends_on:
+      - db
+
+volumes:
+  mysql:
